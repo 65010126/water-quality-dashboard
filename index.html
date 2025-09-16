@@ -13,6 +13,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -647,39 +648,142 @@
                 return;
             }
 
+            // แสดงสถานะกำลังเชื่อมต่อ
+            updateConnectionStatus(false, 'กำลังเชื่อมต่อ...');
+            
             try {
-                client = new Paho.MQTT.Client('broker.netpie.io', 8083, clientId);
+                // ใช้ Paho MQTT with WebSocket
+                const wsUrl = 'wss://broker.netpie.io:8884/mqtt';
+                client = new Paho.MQTT.Client('broker.netpie.io', 8884, '/mqtt', clientId);
                 
                 client.onConnectionLost = function(responseObject) {
-                    console.log('Connection lost: ' + responseObject.errorMessage);
-                    updateConnectionStatus(false);
+                    console.log('Connection lost: ', responseObject);
+                    if (responseObject.errorCode !== 0) {
+                        console.log('Error Code: ', responseObject.errorCode);
+                        console.log('Error Message: ', responseObject.errorMessage);
+                    }
+                    updateConnectionStatus(false, 'การเชื่อมต่อขาดหายไป');
+                    
+                    // Auto-reconnect after 5 seconds
+                    setTimeout(() => {
+                        if (!isConnected) {
+                            console.log('Attempting to reconnect...');
+                            connectToNetpie();
+                        }
+                    }, 5000);
                 };
 
                 client.onMessageArrived = function(message) {
-                    console.log('Message arrived:', message.payloadString);
+                    console.log('Message arrived: ', message.destinationName, message.payloadString);
                     handleIncomingMessage(message.destinationName, message.payloadString);
                 };
 
-                const options = {
+                // Connection options
+                const connectOptions = {
                     useSSL: true,
+                    timeout: 10,
+                    keepAliveInterval: 30,
+                    cleanSession: true,
                     userName: username,
                     password: password,
                     onSuccess: function() {
-                        console.log('Connected to NETPIE');
-                        updateConnectionStatus(true);
+                        console.log('Successfully connected to NETPIE');
+                        updateConnectionStatus(true, 'เชื่อมต่อ NETPIE สำเร็จ');
                         subscribeToTopics();
+                        showNotification('เชื่อมต่อ NETPIE สำเร็จ! 🎉', 'success');
+                        vibrateFeedback();
                     },
                     onFailure: function(error) {
-                        console.log('Connection failed:', error);
-                        updateConnectionStatus(false);
-                        alert('การเชื่อมต่อ NETPIE ล้มเหลว: ' + error.errorMessage);
+                        console.error('Connection failed: ', error);
+                        updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลว');
+                        
+                        let errorMsg = 'การเชื่อมต่อ NETPIE ล้มเหลว';
+                        if (error.errorCode) {
+                            switch(error.errorCode) {
+                                case 1:
+                                    errorMsg = 'การเชื่อมต่อถูกปฏิเสธ - ตรวจสอบ Protocol version';
+                                    break;
+                                case 2:
+                                    errorMsg = 'Client ID ไม่ถูกต้อง';
+                                    break;
+                                case 3:
+                                    errorMsg = 'Server ไม่พร้อมให้บริการ';
+                                    break;
+                                case 4:
+                                    errorMsg = 'Username หรือ Password ไม่ถูกต้อง';
+                                    break;
+                                case 5:
+                                    errorMsg = 'ไม่ได้รับอนุญาต';
+                                    break;
+                                default:
+                                    errorMsg += ` (Error Code: ${error.errorCode})`;
+                            }
+                        }
+                        
+                        showNotification(errorMsg, 'error');
+                        
+                        // Try alternative connection method
+                        setTimeout(() => {
+                            tryAlternativeConnection(clientId, username, password);
+                        }, 2000);
                     }
                 };
 
-                client.connect(options);
+                // Attempt connection
+                client.connect(connectOptions);
+                
             } catch (error) {
-                console.error('Error connecting to NETPIE:', error);
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message);
+                console.error('Error creating MQTT client:', error);
+                updateConnectionStatus(false, 'เกิดข้อผิดพลาด');
+                showNotification('เกิดข้อผิดพลาดในการสร้างการเชื่อมต่อ: ' + error.message, 'error');
+            }
+        }
+
+        // Alternative connection method using different ports
+        function tryAlternativeConnection(clientId, username, password) {
+            console.log('Trying alternative connection method...');
+            updateConnectionStatus(false, 'ลองวิธีการเชื่อมต่อทางเลือก...');
+            
+            try {
+                // Try with different port (8083 for WebSocket)
+                client = new Paho.MQTT.Client('broker.netpie.io', 8083, clientId + '_alt');
+                
+                client.onConnectionLost = function(responseObject) {
+                    console.log('Alt connection lost: ', responseObject);
+                    updateConnectionStatus(false, 'การเชื่อมต่อขาดหายไป');
+                };
+
+                client.onMessageArrived = function(message) {
+                    console.log('Alt message arrived: ', message.destinationName, message.payloadString);
+                    handleIncomingMessage(message.destinationName, message.payloadString);
+                };
+
+                const altOptions = {
+                    useSSL: true,
+                    timeout: 15,
+                    keepAliveInterval: 60,
+                    cleanSession: true,
+                    userName: username,
+                    password: password,
+                    onSuccess: function() {
+                        console.log('Alternative connection successful');
+                        updateConnectionStatus(true, 'เชื่อมต่อ NETPIE สำเร็จ (ทางเลือก)');
+                        subscribeToTopics();
+                        showNotification('เชื่อมต่อสำเร็จผ่านทางเลือก! 🎉', 'success');
+                    },
+                    onFailure: function(error) {
+                        console.error('Alternative connection also failed: ', error);
+                        updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลวทุกวิธี');
+                        showNotification('ไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบข้อมูลและลองใหม่อีกครั้ง', 'error');
+                    }
+                };
+
+                client.connect(altOptions);
+                
+            } catch (altError) {
+                console.error('Alternative connection error:', altError);
+                updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลว');
+                showNotification('ไม่สามารถเชื่อมต่อได้ทุกวิธี กรุณาตรวจสอบการตั้งค่า', 'error');
             }
         }
 
@@ -706,17 +810,19 @@
         }
 
         // Update connection status
-        function updateConnectionStatus(connected) {
+        function updateConnectionStatus(connected, message = '') {
             isConnected = connected;
             const statusDot = document.getElementById('connectionStatus');
             const statusText = document.getElementById('connectionText');
 
             if (connected) {
                 statusDot.classList.add('connected');
-                statusText.textContent = 'เชื่อมต่อ NETPIE สำเร็จ';
+                statusText.textContent = message || 'เชื่อมต่อ NETPIE สำเร็จ';
+                statusText.style.color = '#28a745';
             } else {
                 statusDot.classList.remove('connected');
-                statusText.textContent = 'ตัดการเชื่อมต่อ NETPIE';
+                statusText.textContent = message || 'ตัดการเชื่อมต่อ NETPIE';
+                statusText.style.color = '#dc3545';
             }
         }
 
