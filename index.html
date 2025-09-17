@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water Quality Control Dashboard - Netpie</title>
     
-    <!-- Use different MQTT library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     
@@ -111,13 +110,6 @@
             align-items: center;
             padding: 15px 0;
             border-bottom: 1px solid rgba(0,0,0,0.05);
-            transition: background 0.2s ease;
-        }
-        
-        .sensor-row:hover {
-            background: rgba(102,126,234,0.05);
-            border-radius: 8px;
-            padding: 15px 10px;
         }
         
         .sensor-row:last-child {
@@ -155,34 +147,13 @@
             transform: none;
         }
         
-        .btn-success {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            box-shadow: 0 4px 15px rgba(40,167,69,0.3);
-        }
-        
-        .btn-success:hover {
-            box-shadow: 0 6px 20px rgba(40,167,69,0.4);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(45deg, #dc3545, #fd7e14);
-            box-shadow: 0 4px 15px rgba(220,53,69,0.3);
-        }
-        
-        .btn-danger:hover {
-            box-shadow: 0 6px 20px rgba(220,53,69,0.4);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(45deg, #ffc107, #fd7e14);
-            color: #333;
-            box-shadow: 0 4px 15px rgba(255,193,7,0.3);
-        }
-        
-        .btn-warning:hover {
-            box-shadow: 0 6px 20px rgba(255,193,7,0.4);
-        }
-        
+        .btn-success { background: linear-gradient(45deg, #28a745, #20c997); box-shadow: 0 4px 15px rgba(40,167,69,0.3); }
+        .btn-success:hover { box-shadow: 0 6px 20px rgba(40,167,69,0.4); }
+        .btn-danger { background: linear-gradient(45deg, #dc3545, #fd7e14); box-shadow: 0 4px 15px rgba(220,53,69,0.3); }
+        .btn-danger:hover { box-shadow: 0 6px 20px rgba(220,53,69,0.4); }
+        .btn-warning { background: linear-gradient(45deg, #ffc107, #fd7e14); color: #333; box-shadow: 0 4px 15px rgba(255,193,7,0.3); }
+        .btn-warning:hover { box-shadow: 0 6px 20px rgba(255,193,7,0.4); }
+
         .input-group {
             display: flex;
             gap: 10px;
@@ -231,34 +202,8 @@
             box-shadow: 0 0 15px rgba(40,167,69,0.5);
         }
         
-        .alert {
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border-left: 4px solid;
-            backdrop-filter: blur(10px);
-        }
-        
-        .alert-info {
-            background: rgba(209,236,241,0.8);
-            color: #0c5460;
-            border-left-color: #17a2b8;
-        }
-        
-        .alert-success {
-            background: rgba(212,237,218,0.8);
-            color: #155724;
-            border-left-color: #28a745;
-        }
-        
-        .alert-danger {
-            background: rgba(248,215,218,0.8);
-            color: #721c24;
-            border-left-color: #dc3545;
-        }
-        
         .chart-container {
-            grid-column: 1 / -1;
+            position: relative;
             height: 400px;
             margin-top: 20px;
         }
@@ -276,11 +221,7 @@
             backdrop-filter: blur(10px);
         }
         
-        .log-entry {
-            margin-bottom: 5px;
-            padding: 2px 0;
-        }
-        
+        .log-entry { margin-bottom: 5px; padding: 2px 0; }
         .log-error { color: #dc3545; font-weight: 500; }
         .log-success { color: #28a745; font-weight: 500; }
         .log-info { color: #667eea; font-weight: 500; }
@@ -295,30 +236,16 @@
             font-weight: 500;
         }
         
-        .connection-status.connected {
-            background: rgba(40,167,69,0.1);
-            color: #28a745;
-            border: 1px solid rgba(40,167,69,0.2);
-        }
-        
-        .connection-status.disconnected {
-            background: rgba(220,53,69,0.1);
-            color: #dc3545;
-            border: 1px solid rgba(220,53,69,0.2);
-        }
-        
-        .connection-status.connecting {
-            background: rgba(255,193,7,0.1);
-            color: #ffc107;
-            border: 1px solid rgba(255,193,7,0.2);
-        }
+        .connection-status.connected { background: rgba(40,167,69,0.1); color: #28a745; border: 1px solid rgba(40,167,69,0.2); }
+        .connection-status.disconnected { background: rgba(220,53,69,0.1); color: #dc3545; border: 1px solid rgba(220,53,69,0.2); }
+        .connection-status.connecting { background: rgba(255,193,7,0.1); color: #ffc107; border: 1px solid rgba(255,193,7,0.2); }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🌊 Water Quality Control Dashboard</h1>
-            <p>Direct WebSocket Connection to Netpie</p>
+            <p>Real-time Monitoring & Control via Netpie</p>
         </div>
 
         <div class="status">
@@ -329,12 +256,6 @@
             <div id="lastUpdate">Last Update: Never</div>
         </div>
 
-        <div class="alert alert-info">
-            <strong>🔧 Direct WebSocket:</strong> ใช้ WebSocket โดยตรงเชื่อมต่อกับ Netpie (ไม่ผ่าน MQTT library)
-            <br><small>วิธีนี้จะหลีกเลี่ยงปัญหา library compatibility</small>
-        </div>
-
-        <!-- Connection Settings -->
         <div class="card">
             <h3>🔗 Connection Settings</h3>
             <div class="input-group">
@@ -349,36 +270,18 @@
             <button class="btn" onclick="connectNetpie()" id="connectBtn">🔌 Connect</button>
             <button class="btn btn-danger" onclick="disconnectNetpie()" id="disconnectBtn" disabled>❌ Disconnect</button>
             <button class="btn btn-warning" onclick="clearLog()">🗑️ Clear Log</button>
-            <button class="btn btn-info" onclick="testConnection()">🧪 Test Connection</button>
         </div>
 
         <div class="grid">
-            <!-- Sensor Data -->
             <div class="card">
                 <h3>📊 Sensor Data</h3>
-                <div class="sensor-row">
-                    <span>EC Value:</span>
-                    <span class="sensor-value" id="ecValue">-- mS/cm</span>
-                </div>
-                <div class="sensor-row">
-                    <span>pH Value:</span>
-                    <span class="sensor-value" id="phValue">-- pH</span>
-                </div>
-                <div class="sensor-row">
-                    <span>Temperature:</span>
-                    <span class="sensor-value" id="temperature">-- °C</span>
-                </div>
-                <div class="sensor-row">
-                    <span>EC Voltage:</span>
-                    <span class="sensor-value" id="ecVoltage">-- V</span>
-                </div>
-                <div class="sensor-row">
-                    <span>pH Voltage:</span>
-                    <span class="sensor-value" id="phVoltage">-- V</span>
-                </div>
+                <div class="sensor-row"><span>EC Value:</span><span class="sensor-value" id="ecValue">-- mS/cm</span></div>
+                <div class="sensor-row"><span>pH Value:</span><span class="sensor-value" id="phValue">-- pH</span></div>
+                <div class="sensor-row"><span>Temperature:</span><span class="sensor-value" id="temperature">-- °C</span></div>
+                <div class="sensor-row"><span>EC Voltage:</span><span class="sensor-value" id="ecVoltage">-- V</span></div>
+                <div class="sensor-row"><span>pH Voltage:</span><span class="sensor-value" id="phVoltage">-- V</span></div>
             </div>
 
-            <!-- Pump Controls -->
             <div class="card">
                 <h3>⚙️ Pump Control</h3>
                 <div class="pump-controls">
@@ -410,7 +313,6 @@
                 </div>
             </div>
 
-            <!-- Settings -->
             <div class="card">
                 <h3>⚙️ Settings</h3>
                 <div class="input-group">
@@ -427,41 +329,18 @@
                 </div>
             </div>
 
-            <!-- Status -->
             <div class="card">
                 <h3>🔧 System Status</h3>
-                <div class="sensor-row">
-                    <span>Connection:</span>
-                    <span class="sensor-value" id="connectionStatus">Disconnected</span>
-                </div>
-                <div class="sensor-row">
-                    <span>ADS1115:</span>
-                    <span class="sensor-value" id="adsStatus">--</span>
-                </div>
-                <div class="sensor-row">
-                    <span>WiFi RSSI:</span>
-                    <span class="sensor-value" id="wifiRssi">-- dBm</span>
-                </div>
-                <div class="sensor-row">
-                    <span>Mixing Status:</span>
-                    <span class="sensor-value" id="mixingStatus">OFF</span>
-                </div>
-                <div class="sensor-row">
-                    <span>EC Target:</span>
-                    <span class="sensor-value" id="currentECTarget">-- mS/cm</span>
-                </div>
-                <div class="sensor-row">
-                    <span>Messages Sent:</span>
-                    <span class="sensor-value" id="messagesSent">0</span>
-                </div>
-                <div class="sensor-row">
-                    <span>Messages Received:</span>
-                    <span class="sensor-value" id="messagesReceived">0</span>
-                </div>
+                <div class="sensor-row"><span>Connection:</span><span class="sensor-value" id="connectionStatus">Disconnected</span></div>
+                <div class="sensor-row"><span>ADS1115:</span><span class="sensor-value" id="adsStatus">--</span></div>
+                <div class="sensor-row"><span>WiFi RSSI:</span><span class="sensor-value" id="wifiRssi">-- dBm</span></div>
+                <div class="sensor-row"><span>Mixing Status:</span><span class="sensor-value" id="mixingStatus">OFF</span></div>
+                <div class="sensor-row"><span>EC Target:</span><span class="sensor-value" id="currentECTarget">-- mS/cm</span></div>
+                <div class="sensor-row"><span>Messages Sent:</span><span class="sensor-value" id="messagesSent">0</span></div>
+                <div class="sensor-row"><span>Messages Received:</span><span class="sensor-value" id="messagesReceived">0</span></div>
             </div>
         </div>
 
-        <!-- Chart -->
         <div class="card">
             <h3>📈 Real-time Data Chart</h3>
             <div class="chart-container">
@@ -469,7 +348,6 @@
             </div>
         </div>
 
-        <!-- Debug Log -->
         <div class="card">
             <h3>🔍 Debug Log</h3>
             <div class="log" id="debugLog"></div>
@@ -477,16 +355,13 @@
     </div>
 
     <script>
-        let ws = null;
-        let isConnected = false;
+        let client = null;
         let chart = null;
         let isMixing = false;
-        let reconnectAttempts = 0;
         let messagesSent = 0;
         let messagesReceived = 0;
-        const maxReconnectAttempts = 3;
-
-        // Initialize chart
+    
+        // --- Chart and Logging functions ---
         function initChart() {
             const ctx = document.getElementById('dataChart').getContext('2d');
             chart = new Chart(ctx, {
@@ -499,293 +374,173 @@
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102,126,234,0.1)',
                         tension: 0.4,
-                        pointBackgroundColor: '#667eea',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4
+                        yAxisID: 'y'
                     }, {
                         label: 'pH Value',
                         data: [],
                         borderColor: '#28a745',
                         backgroundColor: 'rgba(40,167,69,0.1)',
                         tension: 0.4,
-                        yAxisID: 'y1',
-                        pointBackgroundColor: '#28a745',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4
+                        yAxisID: 'y1'
                     }, {
                         label: 'Temperature (°C)',
                         data: [],
                         borderColor: '#dc3545',
                         backgroundColor: 'rgba(220,53,69,0.1)',
                         tension: 0.4,
-                        yAxisID: 'y2',
-                        pointBackgroundColor: '#dc3545',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4
+                        yAxisID: 'y2'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    },
                     scales: {
-                        x: {
-                            display: true,
-                            title: {
-                                display: true,
-                                text: 'Time'
-                            }
-                        },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'EC (mS/cm)'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: 'pH'
-                            },
-                            grid: { drawOnChartArea: false },
-                            min: 0,
-                            max: 14
-                        },
-                        y2: {
-                            type: 'linear',
-                            display: false,
-                            min: 0,
-                            max: 50
-                        }
-                    },
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeInOutQuart'
+                        x: { title: { display: true, text: 'Time' } },
+                        y: { type: 'linear', position: 'left', title: { display: true, text: 'EC (mS/cm)' } },
+                        y1: { type: 'linear', position: 'right', title: { display: true, text: 'pH' }, grid: { drawOnChartArea: false }, min: 0, max: 14 },
+                        y2: { type: 'linear', display: false, min: 0, max: 50 }
                     }
                 }
             });
         }
-
-        // Enhanced logging
+    
         function log(message, type = 'info') {
             const logDiv = document.getElementById('debugLog');
             const entry = document.createElement('div');
             entry.className = `log-entry log-${type}`;
-            
             const timestamp = new Date().toLocaleTimeString('th-TH');
             const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
             entry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> ${icon} ${message}`;
-            
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
-            
-            // Keep only last 100 entries
-            if (logDiv.children.length > 100) {
-                logDiv.removeChild(logDiv.firstChild);
-            }
-            
+            if (logDiv.children.length > 100) logDiv.removeChild(logDiv.firstChild);
             console.log(`[${type.toUpperCase()}] ${message}`);
         }
-
+    
         function clearLog() {
             document.getElementById('debugLog').innerHTML = '';
             log('Log cleared', 'info');
         }
-
-        // WebSocket connection to Netpie
+    
+        // --- Connection Logic using MQTT.js ---
         function connectNetpie() {
             const deviceKey = document.getElementById('deviceKey').value.trim();
             const deviceToken = document.getElementById('deviceToken').value.trim();
             const deviceSecret = document.getElementById('deviceSecret').value.trim();
-
+    
             if (!deviceKey || !deviceToken || !deviceSecret) {
                 log('กรุณากรอก Device Key, Token และ Secret ให้ครบถ้วน', 'error');
                 return;
             }
-
-            log('กำลังเชื่อมต่อ Netpie ผ่าน WebSocket...', 'info');
+    
+            const brokerUrl = 'wss://broker.netpie.io:8084/mqtt';
+            const options = {
+                clientId: deviceKey,
+                username: deviceToken,
+                password: deviceSecret,
+                clean: true,
+                connectTimeout: 10000 // 10 seconds
+            };
+    
+            log(`กำลังเชื่อมต่อ Netpie ที่ ${brokerUrl}...`, 'info');
             updateStatus('connecting', 'Connecting...');
-            
             document.getElementById('connectBtn').disabled = true;
-
-            try {
-                // Try multiple WebSocket endpoints
-                const endpoints = [
-                    `wss://broker.netpie.io:8084/mqtt`,
-                    `wss://broker.netpie.io:8083/mqtt`,
-                    `ws://broker.netpie.io:8084/mqtt`
-                ];
-
-                connectWithEndpoint(endpoints, 0, deviceKey, deviceToken, deviceSecret);
-
-            } catch (error) {
-                log(`เกิดข้อผิดพลาด: ${error.message}`, 'error');
-                updateStatus('disconnected', 'Connection failed');
-                document.getElementById('connectBtn').disabled = false;
-            }
-        }
-
-        function connectWithEndpoint(endpoints, index, deviceKey, deviceToken, deviceSecret) {
-            if (index >= endpoints.length) {
-                log('ไม่สามารถเชื่อมต่อด้วย endpoint ใดๆ ได้', 'error');
-                updateStatus('disconnected', 'All endpoints failed');
-                document.getElementById('connectBtn').disabled = false;
-                return;
-            }
-
-            const endpoint = endpoints[index];
-            log(`กำลังทดลองเชื่อมต่อ: ${endpoint}`, 'info');
-
-            // Create WebSocket connection
-            ws = new WebSocket(endpoint, 'mqtt');
-            
-            ws.onopen = function(event) {
-                log(`เชื่อมต่อ WebSocket สำเร็จ: ${endpoint}`, 'success');
-                
-                // Send MQTT CONNECT packet
-                sendMQTTConnect(deviceToken, deviceSecret);
-            };
-
-            ws.onmessage = function(event) {
-                handleWebSocketMessage(event);
-            };
-
-            ws.onerror = function(error) {
-                log(`WebSocket Error (${endpoint}): ${error.message || 'Connection failed'}`, 'error');
-            };
-
-            ws.onclose = function(event) {
-                log(`WebSocket ปิดการเชื่อมต่อ (${endpoint}): Code ${event.code}`, 'warning');
-                
-                if (!isConnected && index < endpoints.length - 1) {
-                    log(`ลองเชื่อมต่อ endpoint ถัดไป...`, 'info');
-                    setTimeout(() => {
-                        connectWithEndpoint(endpoints, index + 1, deviceKey, deviceToken, deviceSecret);
-                    }, 2000);
-                } else if (isConnected) {
-                    updateStatus('disconnected', 'Connection lost');
-                    isConnected = false;
-                    document.getElementById('connectBtn').disabled = false;
-                    document.getElementById('disconnectBtn').disabled = true;
-                    
-                    // Auto reconnect
-                    if (reconnectAttempts < maxReconnectAttempts) {
-                        reconnectAttempts++;
-                        log(`พยายามเชื่อมต่อใหม่ครั้งที่ ${reconnectAttempts}/${maxReconnectAttempts} ใน 5 วินาที...`, 'warning');
-                        setTimeout(() => {
-                            connectNetpie();
-                        }, 5000);
-                    }
-                }
-            };
-
-            // Set timeout for connection attempt
-            setTimeout(() => {
-                if (ws.readyState === WebSocket.CONNECTING) {
-                    log(`Timeout การเชื่อมต่อ ${endpoint}`, 'warning');
-                    ws.close();
-                }
-            }, 10000);
-        }
-
-        function sendMQTTConnect(username, password) {
-            // Simplified MQTT CONNECT packet (this is a basic implementation)
-            log('ส่ง MQTT CONNECT packet...', 'info');
-            
-            // For demo purposes, simulate successful connection
-            setTimeout(() => {
-                log('MQTT CONNECT สำเร็จ! 🎉', 'success');
-                isConnected = true;
-                reconnectAttempts = 0;
-                updateStatus('connected', 'Connected to Netpie');
-                
-                document.getElementById('connectBtn').disabled = true;
+    
+            client = mqtt.connect(brokerUrl, options);
+    
+            client.on('connect', function () {
+                log('เชื่อมต่อ Netpie สำเร็จ! 🎉', 'success');
+                updateStatus('connected', 'Connected');
                 document.getElementById('disconnectBtn').disabled = false;
                 
-                // Start sending test data
-                startDataSimulation();
-            }, 1000);
-        }
-
-        function handleWebSocketMessage(event) {
-            messagesReceived++;
-            updateMessageCount();
-            
-            try {
-                if (event.data instanceof ArrayBuffer) {
-                    log('ได้รับ Binary data', 'info');
-                    // Handle binary MQTT packets
-                } else {
-                    log(`ได้รับข้อความ: ${event.data}`, 'info');
-                    
-                    // Try to parse as JSON
-                    try {
-                        const data = JSON.parse(event.data);
-                        handleDataMessage(data);
-                    } catch (e) {
-                        log('ข้อมูลไม่ใช่ JSON format', 'warning');
+                const subscribeTopic = '@shadow/data/updated';
+                client.subscribe(subscribeTopic, function (err) {
+                    if (!err) {
+                        log(`สมัครรับข้อมูลจาก topic: ${subscribeTopic}`, 'success');
+                    } else {
+                        log(`Subscribe ล้มเหลว: ${err}`, 'error');
                     }
+                });
+            });
+    
+            client.on('message', function (topic, payload) {
+                messagesReceived++;
+                updateMessageCount();
+                const message = payload.toString();
+                log(`ได้รับข้อความจาก [${topic}]: ${message}`, 'info');
+                try {
+                    const data = JSON.parse(message);
+                    handleDataMessage(data.data || data); 
+                } catch (e) {
+                    log(`ไม่สามารถแปลงข้อมูล JSON: ${e.message}`, 'error');
                 }
-            } catch (error) {
-                log(`Error parsing message: ${error.message}`, 'error');
-            }
+            });
+    
+            client.on('error', function (err) {
+                log(`เกิดข้อผิดพลาดในการเชื่อมต่อ: ${err.message}`, 'error');
+                client.end();
+            });
+    
+            client.on('close', function () {
+                if (document.getElementById('connectBtn').disabled) {
+                     log('การเชื่อมต่อถูกตัด', 'warning');
+                }
+                updateStatus('disconnected', 'Disconnected');
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                client = null;
+            });
         }
-
+    
         function disconnectNetpie() {
-            if (ws) {
-                ws.close();
-                ws = null;
+            if (client) {
+                log('กำลังตัดการเชื่อมต่อ...', 'info');
+                client.end();
             }
-            
-            isConnected = false;
-            updateStatus('disconnected', 'Disconnected');
-            
-            document.getElementById('connectBtn').disabled = false;
-            document.getElementById('disconnectBtn').disabled = true;
-            
-            log('ยกเลิกการเชื่อมต่อแล้ว', 'info');
         }
-
-        function testConnection() {
-            if (!isConnected) {
-                log('ไม่ได้เชื่อมต่อ - ไม่สามารถทดสอบได้', 'error');
+    
+        // --- Command Sending Logic ---
+        function sendCommand(command) {
+            if (!client || !client.connected) {
+                log('ยังไม่ได้เชื่อมต่อ ไม่สามารถส่งคำสั่งได้', 'error');
                 return;
             }
-
-            const testData = {
-                test: true,
-                timestamp: new Date().toISOString(),
-                message: 'Dashboard test message'
-            };
-
-            try {
-                ws.send(JSON.stringify(testData));
-                messagesSent++;
-                updateMessageCount();
-                log('ส่งข้อความทดสอบสำเร็จ', 'success');
-            } catch (error) {
-                log(`ไม่สามารถส่งข้อความทดสอบได้: ${error.message}`, 'error');
-            }
+            
+            const publishTopic = '@msg/command'; 
+            const payload = JSON.stringify({ command: command, timestamp: new Date().toISOString() });
+    
+            client.publish(publishTopic, payload, function(err) {
+                if (err) {
+                    log(`ส่งคำสั่ง "${command}" ล้มเหลว: ${err}`, 'error');
+                } else {
+                    messagesSent++;
+                    updateMessageCount();
+                    log(`ส่งคำสั่ง: "${command}" ไปยัง topic [${publishTopic}]`, 'success');
+                }
+            });
         }
-
+    
+        function setECTarget() {
+            const target = document.getElementById('ecTarget').value;
+            if (target) sendCommand(`set_ec_target:${target}`);
+        }
+    
+        function setVolume() {
+            const volume = document.getElementById('volumeTarget').value;
+            if (volume) sendCommand(`set_volume:${volume}`);
+        }
+        
+        function toggleMixing() {
+            isMixing = !isMixing;
+            sendCommand(isMixing ? 'start_mixing' : 'stop_mixing');
+            document.getElementById('mixingBtn').textContent = isMixing ? '🔄 Stop Mixing' : '🔄 Start Mixing';
+        }
+    
+        // --- UI Update Functions ---
         function updateStatus(status, message) {
             const dot = document.getElementById('statusDot');
             const text = document.getElementById('statusText');
             const connectionStatus = document.getElementById('connectionStatus');
-            
             dot.className = 'status-indicator';
             text.className = 'connection-status';
             
@@ -810,34 +565,20 @@
                     connectionStatus.style.color = '#dc3545';
             }
         }
-
+    
         function updateMessageCount() {
             document.getElementById('messagesSent').textContent = messagesSent;
             document.getElementById('messagesReceived').textContent = messagesReceived;
         }
-
+    
         function handleDataMessage(data) {
-            log(`ประมวลผลข้อมูล: ${JSON.stringify(data)}`, 'info');
-            
-            // Update sensor data if available
-            if (data.sensors) {
-                updateSensorData(data.sensors);
-            }
-            
-            // Update system status if available
-            if (data.status) {
-                updateSystemStatus(data.status);
-            }
-            
-            // Update individual sensor values
-            if (data.ec_value !== undefined) {
-                updateSensorData(data);
-            }
-            
-            document.getElementById('lastUpdate').textContent = 
-                'Last Update: ' + new Date().toLocaleString('th-TH');
+            if (!data) return;
+            log(`กำลังประมวลผลข้อมูล: ${JSON.stringify(data)}`, 'info');
+            updateSensorData(data);
+            updateSystemStatus(data);
+            document.getElementById('lastUpdate').textContent = 'Last Update: ' + new Date().toLocaleString('th-TH');
         }
-
+    
         function updateSensorData(data) {
             const updates = [
                 { id: 'ecValue', value: data.ec_value, unit: ' mS/cm', decimals: 2 },
@@ -846,236 +587,46 @@
                 { id: 'ecVoltage', value: data.ec_voltage, unit: ' V', decimals: 2 },
                 { id: 'phVoltage', value: data.ph_voltage, unit: ' V', decimals: 2 }
             ];
-
             updates.forEach(update => {
-                const element = document.getElementById(update.id);
-                if (element && update.value !== undefined && update.value !== null) {
-                    element.textContent = parseFloat(update.value).toFixed(update.decimals) + update.unit;
+                const el = document.getElementById(update.id);
+                if (el && update.value !== undefined) {
+                    el.textContent = parseFloat(update.value).toFixed(update.decimals) + update.unit;
                 }
             });
-
-            // Update system status
-            if (data.ads_connected !== undefined) {
-                document.getElementById('adsStatus').textContent = data.ads_connected ? 'Connected' : 'Disconnected';
-            }
-            if (data.wifi_rssi !== undefined) {
-                document.getElementById('wifiRssi').textContent = data.wifi_rssi + ' dBm';
-            }
             
-            // Update chart
             if (chart && data.ec_value !== undefined && data.ph_value !== undefined) {
-                const now = new Date().toLocaleTimeString('th-TH');
-                chart.data.labels.push(now);
-                chart.data.datasets[0].data.push(data.ec_value || 0);
-                chart.data.datasets[1].data.push(data.ph_value || 0);
-                chart.data.datasets[2].data.push(data.temperature || 0);
-                
-                // Keep only last 20 data points
-                if (chart.data.labels.length > 20) {
-                    chart.data.labels.shift();
-                    chart.data.datasets[0].data.shift();
-                    chart.data.datasets[1].data.shift();
-                    chart.data.datasets[2].data.shift();
-                }
-                
-                chart.update('none');
+                 const timeLabel = new Date().toLocaleTimeString('th-TH');
+                 chart.data.labels.push(timeLabel);
+                 chart.data.datasets[0].data.push(data.ec_value);
+                 chart.data.datasets[1].data.push(data.ph_value);
+                 chart.data.datasets[2].data.push(data.temperature);
+                 
+                 if (chart.data.labels.length > 30) {
+                     chart.data.labels.shift();
+                     chart.data.datasets.forEach(dataset => dataset.data.shift());
+                 }
+                 chart.update();
             }
         }
-
+    
         function updateSystemStatus(data) {
-            updatePumpIndicator('pumpA', data.pump_a);
-            updatePumpIndicator('pumpB', data.pump_b);
-            updatePumpIndicator('pumpMain', data.pump_main);
-            
-            if (data.mixing !== undefined) {
-                document.getElementById('mixingStatus').textContent = data.mixing ? 'ON' : 'OFF';
-                isMixing = data.mixing;
-                
-                const mixingBtn = document.getElementById('mixingBtn');
-                mixingBtn.textContent = isMixing ? '⏹️ Stop Mixing' : '🔄 Start Mixing';
-                mixingBtn.className = isMixing ? 'btn btn-danger' : 'btn btn-warning';
+            if (data.ads_connected !== undefined) document.getElementById('adsStatus').textContent = data.ads_connected ? 'Connected' : 'Disconnected';
+            if (data.wifi_rssi !== undefined) document.getElementById('wifiRssi').textContent = data.wifi_rssi + ' dBm';
+            if (data.mixing_status !== undefined) {
+                isMixing = data.mixing_status;
+                document.getElementById('mixingStatus').textContent = isMixing ? 'ON' : 'OFF';
+                document.getElementById('mixingBtn').textContent = isMixing ? '🔄 Stop Mixing' : '🔄 Start Mixing';
             }
-            
-            if (data.ec_target !== undefined) {
-                document.getElementById('currentECTarget').textContent = data.ec_target.toFixed(1) + ' mS/cm';
-            }
+            if (data.ec_target !== undefined) document.getElementById('currentECTarget').textContent = data.ec_target + ' mS/cm';
+            if (data.pump_a_status !== undefined) document.getElementById('pumpA').classList.toggle('active', data.pump_a_status);
+            if (data.pump_b_status !== undefined) document.getElementById('pumpB').classList.toggle('active', data.pump_b_status);
+            if (data.pump_main_status !== undefined) document.getElementById('pumpMain').classList.toggle('active', data.pump_main_status);
         }
-
-        function updatePumpIndicator(pumpId, isActive) {
-            const indicator = document.getElementById(pumpId);
-            if (indicator) {
-                if (isActive) {
-                    indicator.classList.add('active');
-                } else {
-                    indicator.classList.remove('active');
-                }
-            }
-        }
-
-        function sendCommand(command, value = null) {
-            if (!isConnected || !ws) {
-                log('ไม่ได้เชื่อมต่อ - ไม่สามารถส่งคำสั่งได้', 'error');
-                return;
-            }
-
-            const message = { 
-                command: command,
-                timestamp: new Date().toISOString(),
-                source: 'dashboard'
-            };
-            
-            if (value !== null && value !== undefined) {
-                message.value = value;
-            }
-
-            const messageStr = JSON.stringify(message);
-            
-            try {
-                ws.send(messageStr);
-                messagesSent++;
-                updateMessageCount();
-                log(`ส่งคำสั่ง: ${messageStr}`, 'success');
-            } catch (error) {
-                log(`ไม่สามารถส่งคำสั่งได้: ${error.message}`, 'error');
-            }
-        }
-
-        function toggleMixing() {
-            const command = isMixing ? 'stop_mixing' : 'start_mixing';
-            sendCommand(command);
-        }
-
-        function setECTarget() {
-            const value = parseFloat(document.getElementById('ecTarget').value);
-            if (!isNaN(value) && value >= 0 && value <= 5) {
-                sendCommand('set_ec_target', value);
-                log(`ตั้งค่า EC Target: ${value} mS/cm`, 'info');
-                document.getElementById('ecTarget').value = ''; // Clear input
-            } else {
-                log('กรุณาใส่ค่า EC ระหว่าง 0-5 mS/cm', 'error');
-            }
-        }
-
-        function setVolume() {
-            const value = parseInt(document.getElementById('volumeTarget').value);
-            if (!isNaN(value) && value >= 1 && value <= 1000) {
-                sendCommand('set_volume', value);
-                log(`ตั้งค่าปริมาณน้ำ: ${value} ลิตร`, 'info');
-                document.getElementById('volumeTarget').value = ''; // Clear input
-            } else {
-                log('กรุณาใส่ปริมาณน้ำระหว่าง 1-1000 ลิตร', 'error');
-            }
-        }
-
-        // Data simulation for testing
-        function startDataSimulation() {
-            if (!isConnected) return;
-            
-            log('เริ่มการจำลองข้อมูลสำหรับการทดสอบ', 'info');
-            
-            setInterval(() => {
-                if (!isConnected) return;
-                
-                const testData = {
-                    ec_value: (Math.random() * 2 + 1).toFixed(2),
-                    ph_value: (Math.random() * 2 + 6).toFixed(2),
-                    temperature: (Math.random() * 5 + 25).toFixed(1),
-                    ec_voltage: (Math.random() * 0.5 + 2.5).toFixed(2),
-                    ph_voltage: (Math.random() * 0.5 + 2.5).toFixed(2),
-                    ads_connected: Math.random() > 0.1,
-                    wifi_rssi: Math.floor(Math.random() * 30 - 80)
-                };
-                
-                // Simulate receiving data
-                handleDataMessage(testData);
-                
-            }, 3000); // Update every 3 seconds
-        }
-
-        // Initialize everything
+        
+        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', function() {
-            log('เริ่มต้นระบบ Water Quality Control Dashboard', 'info');
-            log('Version: Direct WebSocket Connection v1.0', 'info');
             initChart();
-            
-            // Auto-connect after 3 seconds
-            setTimeout(() => {
-                log('เริ่มการเชื่อมต่ออัตโนมัติ...', 'info');
-                connectNetpie();
-            }, 3000);
-        });
-
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible' && !isConnected) {
-                log('หน้าเว็บกลับมาแสดงผล - พยายามเชื่อมต่อใหม่', 'info');
-                setTimeout(connectNetpie, 1000);
-            }
-        });
-
-        // Handle window beforeunload
-        window.addEventListener('beforeunload', function() {
-            if (ws && isConnected) {
-                ws.close();
-            }
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(event) {
-            if (event.ctrlKey || event.metaKey) {
-                switch(event.key) {
-                    case 'Enter':
-                        event.preventDefault();
-                        if (!isConnected) {
-                            connectNetpie();
-                        } else {
-                            testConnection();
-                        }
-                        break;
-                    case 'l':
-                        event.preventDefault();
-                        clearLog();
-                        break;
-                    case 'd':
-                        event.preventDefault();
-                        if (isConnected) {
-                            disconnectNetpie();
-                        }
-                        break;
-                }
-            }
-        });
-
-        // Add button hover effects
-        document.querySelectorAll('.btn').forEach(btn => {
-            btn.addEventListener('mouseenter', function() {
-                if (!this.disabled) {
-                    this.style.transform = 'translateY(-2px)';
-                }
-            });
-            
-            btn.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-
-        // Add input validation
-        document.getElementById('ecTarget').addEventListener('input', function() {
-            const value = parseFloat(this.value);
-            if (value < 0 || value > 5) {
-                this.style.borderColor = '#dc3545';
-            } else {
-                this.style.borderColor = '#667eea';
-            }
-        });
-
-        document.getElementById('volumeTarget').addEventListener('input', function() {
-            const value = parseInt(this.value);
-            if (value < 1 || value > 1000) {
-                this.style.borderColor = '#dc3545';
-            } else {
-                this.style.borderColor = '#667eea';
-            }
+            log('Dashboard เริ่มทำงาน กรุณาเชื่อมต่อ Netpie', 'info');
         });
     </script>
 </body>
