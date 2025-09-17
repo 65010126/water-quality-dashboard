@@ -1,4 +1,269 @@
-<!DOCTYPE html>
+// Test connection function
+        function testConnection() {
+            if (!client || !isConnected) {
+                showNotification('ไม่ได้เชื่อมต่อ NETPIE', 'error');
+                return;
+            }
+            
+            showNotification('กำลังทดสอบการเชื่อมต่อ...', 'info');
+            
+            // Send test command and wait for response
+            const testStartTime = Date.now();
+            const originalHandler = handleIncomingMessage;
+            
+            // Temporarily modify message handler to detect test response
+            handleIncomingMessage = function(topic, message) {
+                const responseTime = Date.now() - testStartTime;
+                
+                originalHandler(topic, message); // Call original handler
+                
+                // Show response time
+                showNotification(`การเชื่อมต่อทำงานปกติ (${responseTime}ms)`, 'success');
+                
+                // Restore original handler
+                handleIncomingMessage = originalHandler;
+            };
+            
+            // Send test command
+            sendCommand('get_status');
+            
+            // If no response in 10 seconds, show timeout
+            setTimeout(() => {
+                if (handleIncomingMessage !== originalHandler) {
+                    handleIncomingMessage = originalHandler;
+                    showNotification('การทดสอบหมดเวลา - การเชื่อมต่ออาจมีปัญหา', 'error');
+                }
+            }, 10000);
+        }
+
+        // Enhanced setup method calls
+        function setupClientCallbacks() {
+            client.onConnectionLost = function(responseObject) {
+                console.log('Connection lost: ', responseObject);
+                isConnected = false;
+                updateConnectionStatus(false, 'การเชื่อมต่อขาดหายไป');
+                
+                if (connectionHealthCheck) {
+                    clearInterval(connectionHealthCheck);
+                    connectionHealthCheck = null;
+                }
+                
+                // Auto-reconnect with backoff
+                setTimeout(() => {
+                    if (!isConnected && navigator.onLine) {
+                        console.log('Attempting to reconnect...');
+                        connectToNetpieWithBackoff();
+                    }
+                }, 3000);
+            };
+
+            client.onMessageArrived = handleIncomingMessage;
+        }
+
+        // Update successful connection handler
+        function onSuccessfulConnection(method) {
+            console.log(`${method} successful`);
+            isConnected = true;
+            updateConnectionStatus(true, `เชื่อมต่อ NETPIE สำเร็จ (${method})`);
+            subscribeToTopics();
+            startHealthCheck();
+            connectionAttempts = 0;
+            lastDataReceived = Date.now();
+            showNotification('เชื่อมต่อ NETPIE สำเร็จ!', 'success');
+        }
+
+        // Update the success callbacks in each method
+        function updateConnectionMethods() {
+            // Update Method 1
+            const method1Success = function() {
+                onSuccessfulConnection('WebSocket SSL 8884');
+            };
+            
+            // Update Method 2  
+            const method2Success = function() {
+                onSuccessfulConnection('WebSocket SSL 8883');
+            };
+            
+            // Update Method 3
+            const method3Success = function() {
+                onSuccessfulConnection('WebSocket 8080');
+            };
+        }
+
+        // Enhanced send command with retry logic
+        function sendCommand(command, value = null, retryCount = 0) {
+            if (!client || !isConnected) {
+                if (retryCount < 2) {
+                    showNotification('กำลังเชื่อมต่อใหม่...', 'info');
+                    connectToNetpie();
+                    setTimeout(() => sendCommand(command, value, retryCount + 1), 3000);
+                    return;
+                }
+                showNotification('กรุณาเชื่อมต่อ NETPIE ก่อน', 'error');
+                return;
+            }
+
+            const clientId = document.getElementById('clientId').value;
+            const topic = `${clientId}/msg/control`;
+            
+            const message = { 
+                command: command,
+                timestamp: Date.now()
+            };
+            if (value !== null) {
+                message.value = value;
+            }
+
+            const messageString = JSON.stringify(message);
+            
+            try {
+                const mqttMessage = new Paho.MQTT.Message(messageString);
+                mqttMessage.destinationName = topic;
+                mqttMessage.retained = false;
+                mqttMessage.qos = 1; // Ensure delivery
+                
+                client.send(mqttMessage);
+                console.log('Sent command:', messageString);
+                
+                showNotification('คำสั่งถูกส่งเรียบร้อยแล้ว', 'success');
+                
+                // Save command to settings for potential retry
+                settings.lastCommand = { command, value, timestamp: Date.now() };
+                
+            } catch (error) {
+                console.error('Error sending command:', error);
+                if (retryCount < 2) {
+                    setTimeout(() => sendCommand(command, value, retryCount + 1), 2000);
+                } else {
+                    showNotification('เกิดข้อผิดพลาดในการส่งคำสั่ง', 'error');
+                }
+            }
+        }
+
+        // Add connection quality indicator
+        function updateConnectionQuality() {
+            const statusDot = document.getElementById('connectionStatus');
+            const now = Date.now();
+            
+            if (!isConnected) {
+                statusDot.style.backgroundColor = '#dc3545'; // Red
+                return;
+            }
+            
+            if (lastDataReceived === 0) {
+                statusDot.style.backgroundColor = '#ffc107'; // Yellow - connected but no data yet
+                return;
+            }
+            
+            const timeSinceData = now - lastDataReceived;
+            
+            if (timeSinceData < 10000) { // Less than 10 seconds
+                statusDot.style.backgroundColor = '#28a745'; // Green - excellent
+            } else if (timeSinceData < 30000) { // Less than 30 seconds  
+                statusDot.style.backgroundColor = '#fd7e14'; // Orange - good
+            } else if (timeSinceData < 60000) { // Less than 1 minute
+                statusDot.style.backgroundColor = '#ffc107'; // Yellow - fair
+            } else {
+                statusDot.style.backgroundColor = '#dc3545'; // Red - poor
+            }
+        }
+
+        // Start quality monitoring
+        function startQualityMonitoring() {
+            setInterval(updateConnectionQuality, 5000); // Update every 5 seconds
+        }
+
+        // Add network diagnostics
+        function runNetworkDiagnostics() {
+            const diagnostics = {
+                online: navigator.onLine,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                connectionAttempts: connectionAttempts,
+                lastDataReceived: lastDataReceived,
+                isConnected: isConnected
+            };
+            
+            console.log('Network Diagnostics:', diagnostics);
+            
+            // Show diagnostics in notification
+            const diagText = `
+                ออนไลน์: ${diagnostics.online ? 'ใช่' : 'ไม่'} | 
+                เชื่อมต่อ: ${diagnostics.isConnected ? 'ใช่' : 'ไม่'} | 
+                ความพยายาม: ${diagnostics.connectionAttempts}
+            `;
+            
+            showNotification('ผลการวิเคราะห์: ' + diagText, 'info');
+            return diagnostics;
+        }
+
+        // Add to initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard initialized with enhanced connection management');
+            
+            // Load saved settings
+            loadSettings();
+            
+            // Initialize offline mode capabilities  
+            initializeOfflineMode();
+            
+            // Start health monitoring
+            startHealthCheck();
+            
+            // Start connection quality monitoring
+            startQualityMonitoring();
+            
+            showNotification('Dashboard พร้อมใช้งาน - กดเชื่อมต่อ NETPIE เพื่อเริ่มต้น', 'info');
+            
+            // Auto-connect if credentials are available
+            const clientId = document.getElementById('clientId').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (clientId && username && password) {
+                showNotification('พบข้อมูลการเชื่อมต่อ - กำลังเชื่อมต่ออัตโนมัติ...', 'info');
+                setTimeout(() => {
+                    connectToNetpie();
+                }, 2000);
+            }
+        });
+
+        // Add keyboard shortcuts for quick actions
+        document.addEventListener('keydown', function(event) {
+            // Ctrl + R: Refresh connection
+            if (event.ctrlKey && event.key === 'r') {
+                event.preventDefault();
+                refreshConnection();
+            }
+            
+            // Ctrl + T: Test connection
+            if (event.ctrlKey && event.key === 't') {
+                event.preventDefault();
+                testConnection();
+            }
+            
+            // Ctrl + D: Run diagnostics
+            if (event.ctrlKey && event.key === 'd') {
+                event.preventDefault();
+                runNetworkDiagnostics();
+            }
+        });
+
+        // Add visual feedback for user actions
+        function addVisualFeedback(element) {
+            element.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 100);
+        }
+
+        // Enhance all buttons with visual feedback
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('btn')) {
+                addVisualFeedback(event.target);
+            }
+        });
+    </script><!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -422,18 +687,32 @@
                 <h3>⚙️ การตั้งค่า</h3>
                 <div class="input-group">
                     <label>EC Target:</label>
-                    <input type="number" id="ecTarget" step="0.1" placeholder="1.5">
+                    <input type="number" id="ecTarget" step="0.1" placeholder="1.5" onchange="saveSettings()">
                     <button class="btn" onclick="setECTarget()">ตั้งค่า</button>
                 </div>
                 <div class="input-group">
                     <label>ปริมาณ:</label>
-                    <input type="number" id="volumeSetting" placeholder="100">
+                    <input type="number" id="volumeSetting" placeholder="100" onchange="saveSettings()">
                     <button class="btn" onclick="setVolume()">ตั้งค่า</button>
                 </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4>🔄 การจัดการการเชื่อมต่อ</h4>
+                    <button class="btn btn-warning" onclick="refreshConnection()">รีเฟรชการเชื่อมต่อ</button>
+                    <button class="btn" onclick="testConnection()">ทดสอบการเชื่อมต่อ</button>
+                </div>
+                
                 <div style="margin-top: 20px;">
                     <h4>🔧 การปรับเทียบ (Calibration)</h4>
                     <button class="btn btn-warning" onclick="startCalibration('EC')">ปรับเทียบ EC</button>
                     <button class="btn btn-warning" onclick="startCalibration('PH')">ปรับเทียบ pH</button>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4>💾 การสำรองข้อมูล</h4>
+                    <button class="btn" onclick="exportSettings()">ส่งออกการตั้งค่า</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importSettings(event)">
+                    <button class="btn" onclick="document.getElementById('importFile').click()">นำเข้าการตั้งค่า</button>
                 </div>
             </div>
 
@@ -532,7 +811,7 @@
             }
         });
 
-        // Connect to NETPIE
+        // Connect to NETPIE with multiple fallback methods
         function connectToNetpie() {
             const clientId = document.getElementById('clientId').value;
             const username = document.getElementById('username').value;
@@ -545,27 +824,18 @@
 
             updateConnectionStatus(false, 'กำลังเชื่อมต่อ...');
             
+            // Try multiple connection methods
+            tryConnectionMethod1(clientId, username, password);
+        }
+
+        // Method 1: Standard WebSocket SSL (port 8884)
+        function tryConnectionMethod1(clientId, username, password) {
+            console.log('Trying Method 1: WebSocket SSL 8884...');
+            
             try {
-                client = new Paho.MQTT.Client('broker.netpie.io', 8884, '/mqtt', clientId + '_web_' + Date.now());
+                client = new Paho.MQTT.Client('broker.netpie.io', 8884, '/mqtt', clientId + '_web1_' + Date.now());
+                setupClientCallbacks();
                 
-                client.onConnectionLost = function(responseObject) {
-                    console.log('Connection lost: ', responseObject);
-                    updateConnectionStatus(false, 'การเชื่อมต่อขาดหายไป');
-                    
-                    // Auto-reconnect after 5 seconds
-                    setTimeout(() => {
-                        if (!isConnected) {
-                            console.log('Attempting to reconnect...');
-                            connectToNetpie();
-                        }
-                    }, 5000);
-                };
-
-                client.onMessageArrived = function(message) {
-                    console.log('Message arrived: ', message.destinationName, message.payloadString);
-                    handleIncomingMessage(message.destinationName, message.payloadString);
-                };
-
                 const connectOptions = {
                     useSSL: true,
                     timeout: 10,
@@ -573,50 +843,262 @@
                     cleanSession: true,
                     userName: username,
                     password: password,
+                    mqttVersion: 3,
                     onSuccess: function() {
-                        console.log('Successfully connected to NETPIE');
-                        updateConnectionStatus(true, 'เชื่อมต่อ NETPIE สำเร็จ');
+                        console.log('Method 1 successful');
+                        updateConnectionStatus(true, 'เชื่อมต่อ NETPIE สำเร็จ (Method 1)');
                         subscribeToTopics();
                         showNotification('เชื่อมต่อ NETPIE สำเร็จ!', 'success');
                     },
                     onFailure: function(error) {
-                        console.error('Connection failed: ', error);
-                        updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลว');
-                        
-                        let errorMsg = 'การเชื่อมต่อ NETPIE ล้มเหลว';
-                        if (error.errorCode) {
-                            switch(error.errorCode) {
-                                case 4:
-                                    errorMsg = 'Username หรือ Password ไม่ถูกต้อง';
-                                    break;
-                                case 5:
-                                    errorMsg = 'ไม่ได้รับอนุญาต - ตรวจสอบ Client ID';
-                                    break;
-                                default:
-                                    errorMsg += ` (Error Code: ${error.errorCode})`;
-                            }
-                        }
-                        
-                        showNotification(errorMsg, 'error');
+                        console.log('Method 1 failed, trying Method 2...');
+                        tryConnectionMethod2(clientId, username, password);
                     }
                 };
 
                 client.connect(connectOptions);
                 
             } catch (error) {
-                console.error('Error creating MQTT client:', error);
-                updateConnectionStatus(false, 'เกิดข้อผิดพลาด');
-                showNotification('เกิดข้อผิดพลาดในการสร้างการเชื่อมต่อ', 'error');
+                console.log('Method 1 error, trying Method 2...');
+                tryConnectionMethod2(clientId, username, password);
             }
         }
 
-        // Disconnect from NETPIE
+        // Method 2: WebSocket SSL (port 8883)
+        function tryConnectionMethod2(clientId, username, password) {
+            console.log('Trying Method 2: WebSocket SSL 8883...');
+            
+            try {
+                client = new Paho.MQTT.Client('broker.netpie.io', 8883, clientId + '_web2_' + Date.now());
+                setupClientCallbacks();
+                
+                const connectOptions = {
+                    useSSL: true,
+                    timeout: 15,
+                    keepAliveInterval: 60,
+                    cleanSession: true,
+                    userName: username,
+                    password: password,
+                    mqttVersion: 3,
+                    onSuccess: function() {
+                        console.log('Method 2 successful');
+                        updateConnectionStatus(true, 'เชื่อมต่อ NETPIE สำเร็จ (Method 2)');
+                        subscribeToTopics();
+                        showNotification('เชื่อมต่อ NETPIE สำเร็จ!', 'success');
+                    },
+                    onFailure: function(error) {
+                        console.log('Method 2 failed, trying Method 3...');
+                        tryConnectionMethod3(clientId, username, password);
+                    }
+                };
+
+                client.connect(connectOptions);
+                
+            } catch (error) {
+                console.log('Method 2 error, trying Method 3...');
+                tryConnectionMethod3(clientId, username, password);
+            }
+        }
+
+        // Method 3: WebSocket (port 8080 - non-SSL as last resort)
+        function tryConnectionMethod3(clientId, username, password) {
+            console.log('Trying Method 3: WebSocket 8080...');
+            
+            try {
+                client = new Paho.MQTT.Client('broker.netpie.io', 8080, clientId + '_web3_' + Date.now());
+                setupClientCallbacks();
+                
+                const connectOptions = {
+                    useSSL: false,
+                    timeout: 20,
+                    keepAliveInterval: 60,
+                    cleanSession: true,
+                    userName: username,
+                    password: password,
+                    mqttVersion: 3,
+                    onSuccess: function() {
+                        console.log('Method 3 successful');
+                        updateConnectionStatus(true, 'เชื่อมต่อ NETPIE สำเร็จ (Method 3)');
+                        subscribeToTopics();
+                        showNotification('เชื่อมต่อ NETPIE สำเร็จ (HTTP)!', 'success');
+                    },
+                    onFailure: function(error) {
+                        console.log('All methods failed');
+                        handleAllMethodsFailed(error);
+                    }
+                };
+
+                client.connect(connectOptions);
+                
+            } catch (error) {
+                console.log('Method 3 error');
+                handleAllMethodsFailed(error);
+            }
+        }
+
+        // Setup client callbacks
+        function setupClientCallbacks() {
+            client.onConnectionLost = function(responseObject) {
+                console.log('Connection lost: ', responseObject);
+                updateConnectionStatus(false, 'การเชื่อมต่อขาดหายไป');
+                
+                // Auto-reconnect after 5 seconds
+                setTimeout(() => {
+                    if (!isConnected) {
+                        console.log('Attempting to reconnect...');
+                        connectToNetpie();
+                    }
+                }, 5000);
+            };
+
+            client.onMessageArrived = function(message) {
+                console.log('Message arrived: ', message.destinationName, message.payloadString);
+                handleIncomingMessage(message.destinationName, message.payloadString);
+            };
+        }
+
+        // Handle when all connection methods fail
+        function handleAllMethodsFailed(error) {
+            updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลวทุกวิธี');
+            
+            let errorMsg = 'ไม่สามารถเชื่อมต่อ NETPIE ได้';
+            
+            if (error && error.errorCode) {
+                switch(error.errorCode) {
+                    case 1:
+                        errorMsg = 'เวอร์ชั่น MQTT ไม่รองรับ';
+                        break;
+                    case 2:
+                        errorMsg = 'Client ID ไม่ถูกต้อง';
+                        break;
+                    case 3:
+                        errorMsg = 'เซิร์ฟเวอร์ไม่พร้อมให้บริการ';
+                        break;
+                    case 4:
+                        errorMsg = 'Username หรือ Password ผิด';
+                        break;
+                    case 5:
+                        errorMsg = 'ไม่ได้รับอนุญาต - ตรวจสอบสิทธิ์';
+                        break;
+                    case 6:
+                        errorMsg = 'ไม่ได้รับอนุญาต';
+                        break;
+                    default:
+                        errorMsg += ` (รหัสข้อผิดพลาด: ${error.errorCode})`;
+                }
+            }
+            
+            showNotification(errorMsg + ' - กรุณาตรวจสอบการตั้งค่าและเครือข่าย', 'error');
+            
+            // Show troubleshooting suggestions
+            showTroubleshootingTips();
+        }
+
+        // Show troubleshooting tips
+        function showTroubleshootingTips() {
+            const tips = document.createElement('div');
+            tips.className = 'alert alert-warning';
+            tips.innerHTML = `
+                <h4>💡 คำแนะนำในการแก้ปัญหา:</h4>
+                <ul style="margin: 10px 0 0 20px;">
+                    <li>ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</li>
+                    <li>ตรวจสอบ Client ID, Username, Password</li>
+                    <li>ตรวจสอบว่า ESP32 ทำงานอยู่หรือไม่</li>
+                    <li>ลองรีเฟรชหน้าเว็บและเชื่อมต่อใหม่</li>
+                    <li>ตรวจสอบ Firewall หรือ Network restrictions</li>
+                </ul>
+            `;
+            
+            // Insert after status bar
+            const statusBar = document.querySelector('.status-bar');
+            statusBar.parentNode.insertBefore(tips, statusBar.nextSibling);
+            
+            // Remove after 15 seconds
+            setTimeout(() => {
+                if (tips.parentNode) {
+                    tips.parentNode.removeChild(tips);
+                }
+            }, 15000);
+        }
+
+        // Connection state management
+        let connectionAttempts = 0;
+        let maxConnectionAttempts = 3;
+        let connectionHealthCheck = null;
+        let lastDataReceived = 0;
+
+        // Health check function
+        function startHealthCheck() {
+            if (connectionHealthCheck) clearInterval(connectionHealthCheck);
+            
+            connectionHealthCheck = setInterval(() => {
+                const now = Date.now();
+                
+                // Check if we haven't received data for 30 seconds
+                if (isConnected && lastDataReceived > 0 && (now - lastDataReceived) > 30000) {
+                    console.log('No data received for 30 seconds, checking connection health...');
+                    
+                    // Send a ping/test message to check if connection is alive
+                    if (client && client.isConnected()) {
+                        console.log('Connection appears healthy, requesting status update...');
+                        sendCommand('get_status'); // Request status from ESP32
+                    } else {
+                        console.log('Connection appears dead, attempting reconnect...');
+                        updateConnectionStatus(false, 'การเชื่อมต่อไม่ตอบสนอง - กำลังเชื่อมต่อใหม่...');
+                        connectToNetpie();
+                    }
+                }
+                
+                // Update connection indicator if we have recent data
+                if (isConnected && lastDataReceived > 0 && (now - lastDataReceived) < 10000) {
+                    document.getElementById('connectionStatus').style.backgroundColor = '#28a745'; // Green
+                } else if (isConnected) {
+                    document.getElementById('connectionStatus').style.backgroundColor = '#ffc107'; // Yellow
+                }
+            }, 15000); // Check every 15 seconds
+        }
+
+        // Enhanced message handler
+        function handleIncomingMessage(topic, message) {
+            try {
+                lastDataReceived = Date.now(); // Update last received timestamp
+                const data = JSON.parse(message);
+                
+                if (topic.includes('/msg/data')) {
+                    updateSensorData(data);
+                    updateChart(data);
+                } else if (topic.includes('/msg/status')) {
+                    updateSystemStatus(data);
+                }
+                
+                // Update last update time
+                document.getElementById('lastUpdate').textContent = 
+                    'อัปเดตล่าสุด: ' + new Date().toLocaleString('th-TH');
+                    
+                // Reset connection attempts on successful message
+                connectionAttempts = 0;
+                
+            } catch (error) {
+                console.error('Error parsing message:', error);
+                showNotification('ข้อมูลที่ได้รับไม่ถูกต้อง', 'error');
+            }
+        }
+
+        // Enhanced disconnect function
         function disconnectNetpie() {
+            if (connectionHealthCheck) {
+                clearInterval(connectionHealthCheck);
+                connectionHealthCheck = null;
+            }
+            
             if (client && isConnected) {
                 client.disconnect();
                 updateConnectionStatus(false, 'ตัดการเชื่อมต่อแล้ว');
                 showNotification('ตัดการเชื่อมต่อแล้ว', 'success');
             }
+            
+            connectionAttempts = 0;
+            lastDataReceived = 0;
         }
 
         // Subscribe to topics
@@ -825,9 +1307,152 @@
             }, 3000);
         }
 
-        // Initialize dashboard
+        // Initialize dashboard with enhanced features
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard initialized');
+            
+            // Load saved settings from memory
+            loadSettings();
+            
+            // Initialize offline mode capabilities
+            initializeOfflineMode();
+            
+            // Start health monitoring
+            startHealthCheck();
+            
             showNotification('Dashboard พร้อมใช้งาน - กดเชื่อมต่อ NETPIE เพื่อเริ่มต้น', 'info');
+            
+            // Auto-connect if credentials are available
+            const clientId = document.getElementById('clientId').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (clientId && username && password) {
+                setTimeout(() => {
+                    connectToNetpie();
+                }, 1000);
+            }
         });
+
+        // Save and load settings
+        let settings = {
+            lastECTarget: 1.5,
+            lastVolumeTarget: 100,
+            chartData: [],
+            lastSensorData: {}
+        };
+
+        function saveSettings() {
+            // Save current settings to memory (cannot use localStorage in Claude)
+            settings.lastECTarget = parseFloat(document.getElementById('ecTarget').value) || 1.5;
+            settings.lastVolumeTarget = parseInt(document.getElementById('volumeSetting').value) || 100;
+            console.log('Settings saved to memory');
+        }
+
+        function loadSettings() {
+            // Load settings from memory
+            document.getElementById('ecTarget').value = settings.lastECTarget;
+            document.getElementById('volumeSetting').value = settings.lastVolumeTarget;
+            console.log('Settings loaded from memory');
+        }
+
+        // Initialize offline mode capabilities
+        function initializeOfflineMode() {
+            // Set up offline indicators
+            window.addEventListener('online', function() {
+                console.log('Back online');
+                showNotification('กลับมาออนไลน์แล้ว - กำลังเชื่อมต่อ NETPIE...', 'success');
+                if (!isConnected) {
+                    setTimeout(() => connectToNetpie(), 1000);
+                }
+            });
+
+            window.addEventListener('offline', function() {
+                console.log('Gone offline');
+                showNotification('ไม่มีการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                updateConnectionStatus(false, 'ไม่มีอินเทอร์เน็ต');
+            });
+
+            // Check initial online status
+            if (!navigator.onLine) {
+                updateConnectionStatus(false, 'ไม่มีอินเทอร์เน็ต');
+                showNotification('ตรวจพบว่าไม่มีการเชื่อมต่ออินเทอร์เน็ต', 'error');
+            }
+        }
+
+        // Enhanced connection with exponential backoff
+        function connectToNetpieWithBackoff() {
+            if (connectionAttempts >= maxConnectionAttempts) {
+                const waitTime = Math.min(30000, Math.pow(2, connectionAttempts - maxConnectionAttempts) * 5000);
+                updateConnectionStatus(false, `รอ ${Math.round(waitTime/1000)} วินาทีก่อนลองใหม่...`);
+                
+                setTimeout(() => {
+                    connectionAttempts = 0;
+                    connectToNetpie();
+                }, waitTime);
+                return;
+            }
+            
+            connectionAttempts++;
+            connectToNetpie();
+        }
+
+        // Method to manually refresh connection
+        function refreshConnection() {
+            connectionAttempts = 0;
+            if (client && isConnected) {
+                disconnectNetpie();
+            }
+            
+            setTimeout(() => {
+                updateConnectionStatus(false, 'กำลังรีเฟรชการเชื่อมต่อ...');
+                connectToNetpie();
+            }, 1000);
+        }
+
+        // Export/Import settings (for manual backup)
+        function exportSettings() {
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                settings: settings,
+                chartData: chart.data
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `water-control-backup-${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+            
+            showNotification('การตั้งค่าถูกส่งออกแล้ว', 'success');
+        }
+
+        function importSettings(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importData = JSON.parse(e.target.result);
+                    
+                    if (importData.settings) {
+                        settings = importData.settings;
+                        loadSettings();
+                    }
+                    
+                    if (importData.chartData) {
+                        chart.data = importData.chartData;
+                        chart.update();
+                    }
+                    
+                    showNotification('นำเข้าการตั้งค่าสำเร็จ', 'success');
+                } catch (error) {
+                    showNotification('ไม่สามารถนำเข้าข้อมูลได้ - ไฟล์ไม่ถูกต้อง', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
     </script>
