@@ -2,19 +2,13 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water Quality Control Dashboard</title>
     
-    <!-- PWA Support -->
-    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiV2F0ZXIgUXVhbGl0eSBDb250cm9sIiwic2hvcnRfbmFtZSI6IldhdGVyQ29udHJvbCIsImRlc2NyaXB0aW9uIjoi4Lij4Liw4Lia4Lia4LiE4Lin4Lia4LiE4Lij4Lit4LiH4LiE4Li44LiT4Lig4Liy4Lie4LiZ4LmJ4Liz4Lit4Lix4LiV4LmC4LiZ4Lih4Lix4LiV4Li04LiKIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiM2NjdlZWEiLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCM2FXUjBhRDBpTVRreUlpQm9aV2xuYUhROU9qSTJNeUlnZG1sbGQwSnZlRDBpTUNBd0lERTVNaUF4T1RJaUlHWnBiR3c5SWlNeU9HRTNORFVpUGp4eVpXTjBJSGRwWkhSb1BTSnhNVGt5SWlCb1pXbG5hSFE5SWpFNU1pSWdabWxzYkQwaVl6QmhNek01SWk4K1BIUmxlSFFnZUQwaU9UWWlJSGs5SWpFMU1pSWdhSFJ6SWkxM1pXbG5hSFE2T0RBd0lpQm1hV3hzUFNKM2FHbDBaU0lnWm05dWRDMXphWHBsUFNJeE5pSWdhSFI2SWpjN1ptRnRhV3g1T21Gc2FXRnNPaU52WlM1T2VYQkNkWGgzWlNhc1ltRnphVTVoZDJGZlczSlNac2sxRldKUWJXSmNjeUlnZUQwaU9UWWlJSGs5SWpFMU1pSWdibUZ0WlQwaVVXZGNOeVZsWldSdVVqQXJSa1JXVm5Kc0p5MW1KaUlnU3c0cFBERjBaWGgwSUhBOUlqRXdJajROSWo0TlRHVjBKelJ2YnlCRGFtVmNkMUJZSW1ObVNFVjBiV1JqUVNJcFBHdDBlWGg5ZUhJZ2VEMGljaTloSWlocVl6MG5jeUo2YVNJS0lnPT0iLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9XX0=">
-    <meta name="theme-color" content="#667eea">
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9IiMyOGE3NDUiPjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjMGEzMzkiLz48dGV4dCB4PSI5NiIgeT0iMTEyIiBzdHlsZT0iZm9udC13ZWlnaHQ6ODAwO2ZpbGw6d2hpdGU7Zm9udC1zaXplOjE2cHg7dGV4dC1hbmNob3I6bWlkZGxlO2ZvbnQtZmFtaWx5OkFyaWFsLHNhbnMtc2VyaWYiPldhdGVyPC90ZXh0Pjx0ZXh0IHg9Ijk2IiB5PSIxMzIiIHN0eWxlPSJmb250LXdlaWdodDo4MDA7ZmlsbDp3aGl0ZTtmb250LXNpemU6MTJweDt0ZXh0LWFuY2hvcjptaWRkbGU7Zm9udC1mYW1pbHk6QXJpYWwsc2Fucy1zZXJpZiI+Q29udHJvbDwvdGV4dD48L3N2Zz4=">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="mobile-web-app-capable" content="yes">
+    <!-- MQTT Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -122,12 +116,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        .icon {
-            width: 24px;
-            height: 24px;
-            fill: currentColor;
         }
 
         .sensor-value {
@@ -268,6 +256,12 @@
             color: #856404;
         }
 
+        .alert-success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+
         .timestamp {
             color: #666;
             font-size: 0.8em;
@@ -275,155 +269,56 @@
             margin-top: 10px;
         }
 
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            max-width: 300px;
+            background: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 10000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
                 margin: 10px;
-                border-radius: 10px;
             }
             
             .status-bar {
                 flex-direction: column;
                 gap: 10px;
-                padding: 15px;
             }
             
             .grid {
                 grid-template-columns: 1fr;
-                gap: 15px;
             }
             
             .header h1 {
                 font-size: 1.8em;
             }
             
-            .btn {
-                padding: 15px 20px;
-                font-size: 16px; /* ป้องกันการ zoom ใน iOS */
-                min-height: 48px; /* Touch target size */
-                margin: 8px 5px;
+            .notification {
+                right: 10px;
+                left: 10px;
+                max-width: none;
             }
-            
-            .input-group input {
-                padding: 15px 12px;
-                font-size: 16px; /* ป้องกันการ zoom */
-                min-height: 48px;
-            }
-            
-            .card {
-                padding: 20px;
-                margin-bottom: 15px;
-            }
-            
-            .sensor-value {
-                padding: 18px 15px;
-                margin-bottom: 12px;
-            }
-            
-            .value {
-                font-size: 1.3em;
-            }
-            
-            .pump-status {
-                padding: 18px 15px;
-                flex-direction: column;
-                gap: 12px;
-                text-align: center;
-            }
-            
-            .pump-status > div {
-                width: 100%;
-            }
-            
-            .chart-wrapper {
-                height: 300px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
-                padding: 10px;
-                margin: 0;
-            }
-            
-            .btn {
-                font-size: 14px;
-                padding: 12px 16px;
-                display: block;
-                width: 100%;
-                margin: 8px 0;
-            }
-            
-            .input-group {
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .input-group input {
-                width: 100%;
-            }
-            
-            .pump-status > div {
-                display: flex;
-                gap: 8px;
-                justify-content: center;
-            }
-            
-            .pump-status > div .btn {
-                flex: 1;
-                margin: 0 4px;
-                display: inline-block;
-                width: auto;
-            }
-            
-            .chart-wrapper {
-                height: 250px;
-            }
-        }
-
-        /* Touch improvements */
-        .btn:active {
-            transform: scale(0.98);
-        }
-        
-        /* Prevent text selection on mobile */
-        .card h3, .sensor-value, .pump-status {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        
-        /* Better scrolling on iOS */
-        body {
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        /* Status indicator improvements for mobile */
-        .pump-indicator {
-            width: 16px;
-            height: 16px;
-            margin-right: 8px;
-        }
-        
-        /* Notification improvements for mobile */
-        .mobile-notification {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 25px;
-            z-index: 10000;
-            font-size: 14px;
-            max-width: 90vw;
-            text-align: center;
         }
     </style>
 </head>
@@ -445,20 +340,20 @@
         </div>
 
         <div class="alert alert-info">
-            <strong>📋 วิธีการใช้งาน:</strong> กรอก Client ID, Username และ Password ของ NETPIE ด้านล่าง แล้วกดเชื่อมต่อ
+            <strong>📋 วิธีการใช้งาน:</strong> ใช้ข้อมูลการเชื่อมต่อ NETPIE ตามที่กำหนดไว้ในโค้ด ESP32 แล้วกดเชื่อมต่อ
         </div>
 
         <!-- NETPIE Connection Settings -->
         <div class="card control-card">
             <h3>🔗 การตั้งค่า NETPIE</h3>
             <div class="input-group">
-                <input type="text" id="clientId" placeholder="Client ID" value="cb8398bb-dc16-4e27-b10c-5ef5478f00f9">
+                <input type="text" id="clientId" placeholder="Client ID" value="cb8398bb-dc16-4e27-b10c-5ef5478f00f9" readonly>
             </div>
             <div class="input-group">
-                <input type="text" id="username" placeholder="Username" value="7sTHo827JdGqSpHXbXN2mUqQeVk56BjD">
+                <input type="text" id="username" placeholder="Username" value="7sTHo827JdGqSpHXbXN2mUqQeVk56BjD" readonly>
             </div>
             <div class="input-group">
-                <input type="password" id="password" placeholder="Password" value="SnNypnNRyQ9LKXiWLtnJ6LLP99NwGiXj">
+                <input type="password" id="password" placeholder="Password" value="SnNypnNRyQ9LKXiWLtnJ6LLP99NwGiXj" readonly>
             </div>
             <button class="btn" onclick="connectToNetpie()">🔌 เชื่อมต่อ NETPIE</button>
             <button class="btn btn-danger" onclick="disconnectNetpie()">❌ ตัดการเชื่อมต่อ</button>
@@ -527,12 +422,12 @@
                 <h3>⚙️ การตั้งค่า</h3>
                 <div class="input-group">
                     <label>EC Target:</label>
-                    <input type="number" id="ecTarget" step="0.1" placeholder="0.0">
+                    <input type="number" id="ecTarget" step="0.1" placeholder="1.5">
                     <button class="btn" onclick="setECTarget()">ตั้งค่า</button>
                 </div>
                 <div class="input-group">
                     <label>ปริมาณ:</label>
-                    <input type="number" id="volumeSetting" placeholder="0">
+                    <input type="number" id="volumeSetting" placeholder="100">
                     <button class="btn" onclick="setVolume()">ตั้งค่า</button>
                 </div>
                 <div style="margin-top: 20px;">
@@ -644,24 +539,17 @@
             const password = document.getElementById('password').value;
 
             if (!clientId || !username || !password) {
-                alert('กรุณากรอกข้อมูล NETPIE ให้ครบถ้วน');
+                showNotification('กรุณากรอกข้อมูล NETPIE ให้ครบถ้วน', 'error');
                 return;
             }
 
-            // แสดงสถานะกำลังเชื่อมต่อ
             updateConnectionStatus(false, 'กำลังเชื่อมต่อ...');
             
             try {
-                // ใช้ Paho MQTT with WebSocket
-                const wsUrl = 'wss://broker.netpie.io:8884/mqtt';
-                client = new Paho.MQTT.Client('broker.netpie.io', 8884, '/mqtt', clientId);
+                client = new Paho.MQTT.Client('broker.netpie.io', 8884, '/mqtt', clientId + '_web_' + Date.now());
                 
                 client.onConnectionLost = function(responseObject) {
                     console.log('Connection lost: ', responseObject);
-                    if (responseObject.errorCode !== 0) {
-                        console.log('Error Code: ', responseObject.errorCode);
-                        console.log('Error Message: ', responseObject.errorMessage);
-                    }
                     updateConnectionStatus(false, 'การเชื่อมต่อขาดหายไป');
                     
                     // Auto-reconnect after 5 seconds
@@ -678,7 +566,6 @@
                     handleIncomingMessage(message.destinationName, message.payloadString);
                 };
 
-                // Connection options
                 const connectOptions = {
                     useSSL: true,
                     timeout: 10,
@@ -690,8 +577,7 @@
                         console.log('Successfully connected to NETPIE');
                         updateConnectionStatus(true, 'เชื่อมต่อ NETPIE สำเร็จ');
                         subscribeToTopics();
-                        showNotification('เชื่อมต่อ NETPIE สำเร็จ! 🎉', 'success');
-                        vibrateFeedback();
+                        showNotification('เชื่อมต่อ NETPIE สำเร็จ!', 'success');
                     },
                     onFailure: function(error) {
                         console.error('Connection failed: ', error);
@@ -700,20 +586,11 @@
                         let errorMsg = 'การเชื่อมต่อ NETPIE ล้มเหลว';
                         if (error.errorCode) {
                             switch(error.errorCode) {
-                                case 1:
-                                    errorMsg = 'การเชื่อมต่อถูกปฏิเสธ - ตรวจสอบ Protocol version';
-                                    break;
-                                case 2:
-                                    errorMsg = 'Client ID ไม่ถูกต้อง';
-                                    break;
-                                case 3:
-                                    errorMsg = 'Server ไม่พร้อมให้บริการ';
-                                    break;
                                 case 4:
                                     errorMsg = 'Username หรือ Password ไม่ถูกต้อง';
                                     break;
                                 case 5:
-                                    errorMsg = 'ไม่ได้รับอนุญาต';
+                                    errorMsg = 'ไม่ได้รับอนุญาต - ตรวจสอบ Client ID';
                                     break;
                                 default:
                                     errorMsg += ` (Error Code: ${error.errorCode})`;
@@ -721,69 +598,15 @@
                         }
                         
                         showNotification(errorMsg, 'error');
-                        
-                        // Try alternative connection method
-                        setTimeout(() => {
-                            tryAlternativeConnection(clientId, username, password);
-                        }, 2000);
                     }
                 };
 
-                // Attempt connection
                 client.connect(connectOptions);
                 
             } catch (error) {
                 console.error('Error creating MQTT client:', error);
                 updateConnectionStatus(false, 'เกิดข้อผิดพลาด');
-                showNotification('เกิดข้อผิดพลาดในการสร้างการเชื่อมต่อ: ' + error.message, 'error');
-            }
-        }
-
-        // Alternative connection method using different ports
-        function tryAlternativeConnection(clientId, username, password) {
-            console.log('Trying alternative connection method...');
-            updateConnectionStatus(false, 'ลองวิธีการเชื่อมต่อทางเลือก...');
-            
-            try {
-                // Try with different port (8083 for WebSocket)
-                client = new Paho.MQTT.Client('broker.netpie.io', 8083, clientId + '_alt');
-                
-                client.onConnectionLost = function(responseObject) {
-                    console.log('Alt connection lost: ', responseObject);
-                    updateConnectionStatus(false, 'การเชื่อมต่อขาดหายไป');
-                };
-
-                client.onMessageArrived = function(message) {
-                    console.log('Alt message arrived: ', message.destinationName, message.payloadString);
-                    handleIncomingMessage(message.destinationName, message.payloadString);
-                };
-
-                const altOptions = {
-                    useSSL: true,
-                    timeout: 15,
-                    keepAliveInterval: 60,
-                    cleanSession: true,
-                    userName: username,
-                    password: password,
-                    onSuccess: function() {
-                        console.log('Alternative connection successful');
-                        updateConnectionStatus(true, 'เชื่อมต่อ NETPIE สำเร็จ (ทางเลือก)');
-                        subscribeToTopics();
-                        showNotification('เชื่อมต่อสำเร็จผ่านทางเลือก! 🎉', 'success');
-                    },
-                    onFailure: function(error) {
-                        console.error('Alternative connection also failed: ', error);
-                        updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลวทุกวิธี');
-                        showNotification('ไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบข้อมูลและลองใหม่อีกครั้ง', 'error');
-                    }
-                };
-
-                client.connect(altOptions);
-                
-            } catch (altError) {
-                console.error('Alternative connection error:', altError);
-                updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลว');
-                showNotification('ไม่สามารถเชื่อมต่อได้ทุกวิธี กรุณาตรวจสอบการตั้งค่า', 'error');
+                showNotification('เกิดข้อผิดพลาดในการสร้างการเชื่อมต่อ', 'error');
             }
         }
 
@@ -791,7 +614,8 @@
         function disconnectNetpie() {
             if (client && isConnected) {
                 client.disconnect();
-                updateConnectionStatus(false);
+                updateConnectionStatus(false, 'ตัดการเชื่อมต่อแล้ว');
+                showNotification('ตัดการเชื่อมต่อแล้ว', 'success');
             }
         }
 
@@ -821,7 +645,7 @@
                 statusText.style.color = '#28a745';
             } else {
                 statusDot.classList.remove('connected');
-                statusText.textContent = message || 'ตัดการเชื่อมต่อ NETPIE';
+                statusText.textContent = message || 'ไม่ได้เชื่อมต่อ NETPIE';
                 statusText.style.color = '#dc3545';
             }
         }
@@ -848,11 +672,11 @@
 
         // Update sensor data display
         function updateSensorData(data) {
-            document.getElementById('ecValue').innerHTML = `${data.ec_value || '-'} <span class="unit">mS/cm</span>`;
-            document.getElementById('phValue').innerHTML = `${data.ph_value || '-'} <span class="unit">pH</span>`;
-            document.getElementById('temperature').innerHTML = `${data.temperature || '-'} <span class="unit">°C</span>`;
-            document.getElementById('ecVoltage').innerHTML = `${data.ec_voltage || '-'} <span class="unit">V</span>`;
-            document.getElementById('phVoltage').innerHTML = `${data.ph_voltage || '-'} <span class="unit">V</span>`;
+            document.getElementById('ecValue').innerHTML = `${(data.ec_value || 0).toFixed(2)} <span class="unit">mS/cm</span>`;
+            document.getElementById('phValue').innerHTML = `${(data.ph_value || 0).toFixed(2)} <span class="unit">pH</span>`;
+            document.getElementById('temperature').innerHTML = `${(data.temperature || 0).toFixed(1)} <span class="unit">°C</span>`;
+            document.getElementById('ecVoltage').innerHTML = `${(data.ec_voltage || 0).toFixed(2)} <span class="unit">V</span>`;
+            document.getElementById('phVoltage').innerHTML = `${(data.ph_voltage || 0).toFixed(2)} <span class="unit">V</span>`;
             document.getElementById('adsStatus').textContent = data.ads_connected ? 'เชื่อมต่อ' : 'ขาดการเชื่อมต่อ';
             document.getElementById('wifiRssi').innerHTML = `${data.wifi_rssi || '-'} <span class="unit">dBm</span>`;
         }
@@ -866,7 +690,7 @@
             
             // Update other status
             document.getElementById('mixingStatus').textContent = data.mixing ? 'เปิด' : 'ปิด';
-            document.getElementById('currentECTarget').innerHTML = `${data.ec_target || '-'} <span class="unit">mS/cm</span>`;
+            document.getElementById('currentECTarget').innerHTML = `${(data.ec_target || 0).toFixed(1)} <span class="unit">mS/cm</span>`;
             document.getElementById('currentVolume').textContent = data.volume_setting || '-';
             
             // Update mixing button
@@ -911,7 +735,7 @@
         // Send command to NETPIE
         function sendCommand(command, value = null) {
             if (!client || !isConnected) {
-                alert('กรุณาเชื่อมต่อ NETPIE ก่อน');
+                showNotification('กรุณาเชื่อมต่อ NETPIE ก่อน', 'error');
                 return;
             }
 
@@ -931,112 +755,11 @@
                 client.send(mqttMessage);
                 console.log('Sent command:', messageString);
                 
-                // Show success notification
                 showNotification('คำสั่งถูกส่งเรียบร้อยแล้ว', 'success');
             } catch (error) {
                 console.error('Error sending command:', error);
                 showNotification('เกิดข้อผิดพลาดในการส่งคำสั่ง', 'error');
             }
-        }
-
-        // Show notification
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            
-            // Mobile-optimized notification
-            if (window.innerWidth <= 768) {
-                notification.className = 'mobile-notification';
-                notification.style.animation = 'slideDown 0.3s ease-out';
-            } else {
-                notification.className = `alert alert-${type === 'error' ? 'warning' : 'info'}`;
-                notification.style.position = 'fixed';
-                notification.style.top = '20px';
-                notification.style.right = '20px';
-                notification.style.maxWidth = '300px';
-            }
-            
-            notification.style.zIndex = '10000';
-            notification.innerHTML = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (document.body.contains(notification)) {
-                    document.body.removeChild(notification);
-                }
-            }, 3000);
-        }
-
-        // Mobile-specific functions
-        function isMobile() {
-            return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
-
-        // Add vibration for mobile feedback
-        function vibrateFeedback() {
-            if ('vibrate' in navigator && isMobile()) {
-                navigator.vibrate([50]); // Short vibration
-            }
-        }
-
-        // Enhanced touch handling for buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            const buttons = document.querySelectorAll('.btn');
-            buttons.forEach(button => {
-                button.addEventListener('touchstart', function() {
-                    vibrateFeedback();
-                    this.style.transform = 'scale(0.95)';
-                });
-                
-                button.addEventListener('touchend', function() {
-                    this.style.transform = '';
-                });
-            });
-        });
-
-        // Prevent double-tap zoom on iOS
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function (event) {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
-
-        // Add CSS animation for mobile notifications
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideDown {
-                from {
-                    transform: translate(-50%, -100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translate(-50%, 0);
-                    opacity: 1;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Auto-hide address bar on mobile
-        function hideAddressBar() {
-            if (isMobile() && !window.location.hash) {
-                if (document.height <= window.outerHeight + 10) {
-                    document.body.style.height = (window.outerHeight + 50) + 'px';
-                    setTimeout(() => {
-                        window.scrollTo(0, 1);
-                        document.body.style.height = window.outerHeight + 'px';
-                    }, 50);
-                }
-            }
-        }
-        
-        // Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('data:application/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgZnVuY3Rpb24oZXZlbnQpIHsKICBjb25zb2xlLmxvZygnU2VydmljZSBXb3JrZXIgaW5zdGFsbGVkJyk7Cn0pOwoKc2VsZi5hZGRFdmVudExpc3RlbmVyKCdmZXRjaCcsIGZ1bmN0aW9uKGV2ZW50KSB7CiAgZXZlbnQucmVzcG9uZFdpdGgoZmV0Y2goZXZlbnQucmVxdWVzdCkpOwp9KTs=')
-            .catch(err => console.log('SW registration failed'));
         }
 
         // Control pump functions
@@ -1053,8 +776,8 @@
         // Set EC target
         function setECTarget() {
             const value = parseFloat(document.getElementById('ecTarget').value);
-            if (isNaN(value)) {
-                alert('กรุณากรอกค่า EC ที่ถูกต้อง');
+            if (isNaN(value) || value < 0 || value > 30) {
+                showNotification('กรุณากรอกค่า EC ที่ถูกต้อง (0-30)', 'error');
                 return;
             }
             sendCommand('set_ec', value);
@@ -1063,8 +786,8 @@
         // Set volume
         function setVolume() {
             const value = parseInt(document.getElementById('volumeSetting').value);
-            if (isNaN(value)) {
-                alert('กรุณากรอกค่าปริมาณที่ถูกต้อง');
+            if (isNaN(value) || value < 0 || value > 1000) {
+                showNotification('กรุณากรอกค่าปริมาณที่ถูกต้อง (0-1000)', 'error');
                 return;
             }
             sendCommand('set_volume', value);
@@ -1074,65 +797,37 @@
         function startCalibration(sensor) {
             if (confirm(`คุณต้องการเริ่มการปรับเทียบ ${sensor} หรือไม่?`)) {
                 sendCommand(`start_${sensor.toLowerCase()}_calibration`);
-                alert(`กำลังเริ่มการปรับเทียบ ${sensor} กรุณาติดตามคำแนะนำที่อุปกรณ์`);
+                showNotification(`กำลังเริ่มการปรับเทียบ ${sensor}`, 'success');
             }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Hide and remove notification
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
         }
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard initialized');
-            
-            // Auto-hide address bar on mobile
-            hideAddressBar();
-            
-            // Add install prompt for PWA
-            let deferredPrompt;
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                showInstallButton();
-            });
-            
-            // Show install button
-            function showInstallButton() {
-                const installBtn = document.createElement('button');
-                installBtn.className = 'btn btn-warning';
-                installBtn.innerHTML = '📱 ติดตั้งแอป';
-                installBtn.style.position = 'fixed';
-                installBtn.style.bottom = '20px';
-                installBtn.style.right = '20px';
-                installBtn.style.zIndex = '1000';
-                
-                installBtn.addEventListener('click', async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        if (outcome === 'accepted') {
-                            showNotification('แอปติดตั้งเรียบร้อยแล้ว!', 'success');
-                        }
-                        deferredPrompt = null;
-                        document.body.removeChild(installBtn);
-                    }
-                });
-                
-                document.body.appendChild(installBtn);
-            }
-            
-            // Check if running as PWA
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-                console.log('Running as PWA');
-                // Hide browser-specific elements
-                document.body.classList.add('pwa-mode');
-            }
-            
-            // Add orientation change handler
-            window.addEventListener('orientationchange', function() {
-                setTimeout(() => {
-                    hideAddressBar();
-                    chart.resize();
-                }, 500);
-            });
+            showNotification('Dashboard พร้อมใช้งาน - กดเชื่อมต่อ NETPIE เพื่อเริ่มต้น', 'info');
         });
     </script>
-</body>
-</html>
